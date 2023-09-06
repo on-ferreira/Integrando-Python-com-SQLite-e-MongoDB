@@ -25,7 +25,7 @@ class Account(Base):
     ag = Column(String)  # Seguindo os padrões dados, mesmo agência sendo melhor representada como uma outra classe
     num = Column(Integer, unique=True)
     balance = Column(Float)
-    id_cliente = Column(Integer, ForeignKey("client.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("client.id"), nullable=False)
 
     client = relationship("Client", back_populates="account")
 
@@ -62,12 +62,68 @@ with Session(engine) as session:
         address="Avenida Nida km x"
     )
 
+    acc1 = Account(
+        type="Corrente",
+        ag="0001",
+        num="1",
+        balance="100",
+        client_id=1
+    )
+
+    acc2 = Account(
+        type="Poupança",
+        ag="0001",
+        num="2",
+        balance="0",
+        client_id=1
+    )
+
+    acc3 = Account(
+        type="Corrente",
+        ag="0001",
+        num="11",
+        balance="1000",
+        client_id=2
+    )
+
+    acc4 = Account(
+        type="Corrente",
+        ag="0001",
+        num="15",
+        balance="2000",
+        client_id=3
+    )
+
     # Persistindo os dados
-    session.add_all([fulano, beltrano, ciclano])
+    session.add_all([fulano, beltrano, ciclano, acc1, acc2, acc3, acc4])
 
     session.commit()
 
-# SELECT * FROM CLIENT WHERE NAME IN ('Fulano', 'Beltrano');
-stmt = select(Client).where(Client.name.in_(["Fulano", "Beltrano"]))
+print("""
+SELECT * 
+FROM CLIENT 
+WHERE NAME IN ('Fulano', 'Beltrano');
+""")
+stmt = select(Client).where(Client.name.in_(["Fulano", "Ciclano"]))
 for user in session.scalars(stmt):
     print(user)
+
+print("""
+SELECT *
+FROM Account
+ORDER BY balance DESC;
+""")
+stmt_order = select(Account).order_by(Account.balance.desc())
+for result in session.scalars(stmt_order):
+    print(result)
+
+stmt_join = select(Client, Account).join_from(Client, Account)
+print("""
+SELECT *
+FROM Client
+INNER JOIN Account ON Client.id = Account.client_id;
+""")
+for result in session.scalars(stmt_join):
+    print(result)
+
+session.close()
